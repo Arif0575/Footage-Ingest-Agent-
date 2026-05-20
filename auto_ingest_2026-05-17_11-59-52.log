@@ -1,0 +1,52 @@
+2026-05-17 11:59:53  ===== AUTO INGEST RUN STARTED =====
+2026-05-17 11:59:53  Incoming Root: Y:\Input\Admin\files\InstantUpload\GoPro-Exports
+2026-05-17 11:59:53  Raw Archive: Y:\Nukeproof_Reconnection_Part_1_2026-05-17
+2026-05-17 11:59:53  Proxy Folder: Z:\Nukeproof_Reconnection_Part_1_2026-05-17
+2026-05-17 11:59:53  Max Files: 10
+2026-05-17 11:59:53  Found 4 incoming video files.
+2026-05-17 11:59:53  
+2026-05-17 11:59:53  Checking file: Y:\Input\Admin\files\InstantUpload\GoPro-Exports\GX010331_ALTA3055437412050788208.MP4
+2026-05-17 12:00:13  File appears stable / fully copied.
+2026-05-17 12:00:16  Detected resolution: 3840x2160
+2026-05-17 12:00:16  4K detected - using Hero 10 upside-down flip filter
+2026-05-17 12:00:16  Creating proxy:
+2026-05-17 12:00:16  Input : Y:\Input\Admin\files\InstantUpload\GoPro-Exports\GX010331_ALTA3055437412050788208.MP4
+2026-05-17 12:00:16  Proxy : Z:\Nukeproof_Reconnection_Part_1_2026-05-17\GX010331_ALTA3055437412050788208_proxy.MP4
+2026-05-17 12:00:16  Filter: transpose_cuda=2,transpose_cuda=2,scale_cuda=1920:1080
+2026-05-17 12:00:19  Proxy created successfully.
+2026-05-17 12:00:19  SUCCESS:
+2026-05-17 12:00:19  Raw moved to: Y:\Nukeproof_Reconnection_Part_1_2026-05-17\GX010331_ALTA3055437412050788208.MP4
+2026-05-17 12:00:19  Proxy saved to: Z:\Nukeproof_Reconnection_Part_1_2026-05-17\GX010331_ALTA3055437412050788208_proxy.MP4
+2026-05-17 12:00:19  
+2026-05-17 12:00:19  Checking file: Y:\Input\Admin\files\InstantUpload\GoPro-Exports\GX020319_ALTA3055437412050788208.MP4
+2026-05-17 12:00:39  File appears stable / fully copied.
+2026-05-17 12:00:39  Detected resolution: 3840x2160
+2026-05-17 12:00:39  4K detected - using Hero 10 upside-down flip filter
+2026-05-17 12:00:39  Creating proxy:
+2026-05-17 12:00:39  Input : Y:\Input\Admin\files\InstantUpload\GoPro-Exports\GX020319_ALTA3055437412050788208.MP4
+2026-05-17 12:00:39  Proxy : Z:\Nukeproof_Reconnection_Part_1_2026-05-17\GX020319_ALTA3055437412050788208_proxy.MP4
+2026-05-17 12:00:39  Filter: transpose_cuda=2,transpose_cuda=2,scale_cuda=1920:1080
+2026-05-17 12:05:34  Proxy created successfully.
+2026-05-17 12:05:34  SUCCESS:
+2026-05-17 12:05:34  Raw moved to: Y:\Nukeproof_Reconnection_Part_1_2026-05-17\GX020319_ALTA3055437412050788208.MP4
+2026-05-17 12:05:34  Proxy saved to: Z:\Nukeproof_Reconnection_Part_1_2026-05-17\GX020319_ALTA3055437412050788208_proxy.MP4
+2026-05-17 12:05:34  
+2026-05-17 12:05:34  Checking file: Y:\Input\Admin\files\InstantUpload\GoPro-Exports\GX010331_ALTA3055437412050788208.MP4
+2026-05-17 12:05:54  File appears stable / fully copied.
+2026-05-17 12:05:55  Detected resolution: 3840x2160
+2026-05-17 12:05:55  4K detected - using Hero 10 upside-down flip filter
+2026-05-17 12:05:55  SKIPPED: Proxy already exists.
+2026-05-17 12:05:55  Existing Proxy: Z:\Nukeproof_Reconnection_Part_1_2026-05-17\GX010331_ALTA3055437412050788208_proxy.MP4
+2026-05-17 12:05:55  
+2026-05-17 12:05:55  Checking file: Y:\Input\Admin\files\InstantUpload\GoPro-Exports\GX020319_ALTA3055437412050788208.MP4
+2026-05-17 12:06:15  File appears stable / fully copied.
+2026-05-17 12:06:15  Detected resolution: 3840x2160
+2026-05-17 12:06:15  4K detected - using Hero 10 upside-down flip filter
+2026-05-17 12:06:15  SKIPPED: Proxy already exists.
+2026-05-17 12:06:15  Existing Proxy: Z:\Nukeproof_Reconnection_Part_1_2026-05-17\GX020319_ALTA3055437412050788208_proxy.MP4
+2026-05-17 12:06:15  
+2026-05-17 12:06:15  ===== AUTO INGEST RUN FINISHED =====
+2026-05-17 12:06:15  SUCCESS: 2
+2026-05-17 12:06:15  SKIPPED: 2
+2026-05-17 12:06:15  FAILED : 0
+2026-05-17 12:06:15  Log File: C:\Users\Arif Khan\Documents\Powersheel_scripts\Logs\auto_ingest_2026-05-17_11-59-52.log

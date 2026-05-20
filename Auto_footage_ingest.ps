@@ -1,0 +1,249 @@
+# ===== SETTINGS =====
+$ffmpeg = "C:\Users\Arif Khan\Documents\ffmpeg-2026-05-11-git-17bc88e67f-essentials_build\ffmpeg-2026-05-11-git-17bc88e67f-essentials_build\bin\ffmpeg.exe"
+$ffprobe = "C:\Users\Arif Khan\Documents\ffmpeg-2026-05-11-git-17bc88e67f-essentials_build\ffmpeg-2026-05-11-git-17bc88e67f-essentials_build\bin\ffprobe.exe"
+
+# Folder where new phone/GoPro uploads arrive
+$incomingRoot = "\\KHAN-NAS\Media\Footage\Input\Admin\files\InstantUpload\GoPro-Exports\"
+
+# Where raw masters should be moved after successful proxy creation
+$rawArchiveRoot = "Y:\"
+
+# Where Jellyfin proxy files should go
+$proxyRoot = "X:\"
+
+# Folder naming
+# Options: "DateOnly", "NameDate", "NameOnly"
+$folderMode = "NameDate"
+$eventName = "Nukeproof"
+
+# Safety
+$maxFiles = 20   # later change to larger number
+$videoExtensions = @("*.mp4", "*.MP4", "*.mov", "*.MOV")
+
+# ===== LOG SETUP =====
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+
+$logFolder = Join-Path $PSScriptRoot "Logs"
+New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
+
+$logFile = Join-Path $logFolder "auto_ingest_$timestamp.log"
+
+$successCount = 0
+$skippedCount = 0
+$failedCount = 0
+
+function Write-Log {
+    param([string]$Message)
+
+    $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $Message"
+
+    Write-Host $line
+    Add-Content -Path $logFile -Value $line
+}
+
+function Wait-UntilFileReady {
+    param(
+        [string]$Path,
+        [int]$StableChecks = 6,
+        [int]$DelaySeconds = 10
+    )
+
+    $lastSize = -1
+    $stableCount = 0
+
+    while ($stableCount -lt $StableChecks) {
+
+        if (!(Test-Path $Path)) {
+            Start-Sleep -Seconds $DelaySeconds
+            continue
+        }
+
+        $currentSize = (Get-Item $Path).Length
+
+        if ($currentSize -eq $lastSize -and $currentSize -gt 0) {
+            $stableCount++
+        }
+        else {
+            $stableCount = 0
+            $lastSize = $currentSize
+        }
+
+        Start-Sleep -Seconds $DelaySeconds
+    }
+}
+
+# ===== CREATE DESTINATION FOLDER NAME =====
+$date = Get-Date -Format "yyyy-MM-dd"
+
+$safeName = $eventName -replace '[\\/:*?"<>|]', '_'
+
+switch ($folderMode) {
+
+    "DateOnly" {
+        $folderName = $date
+    }
+
+    "NameDate" {
+        $folderName = "${safeName}_${date}"
+    }
+
+    "NameOnly" {
+        $folderName = $safeName
+    }
+
+    default {
+        throw "Invalid folder mode: $folderMode"
+    }
+}
+
+$rawDestinationFolder = Join-Path $rawArchiveRoot $folderName
+$proxyDestinationFolder = Join-Path $proxyRoot $folderName
+
+New-Item -ItemType Directory -Path $rawDestinationFolder -Force | Out-Null
+New-Item -ItemType Directory -Path $proxyDestinationFolder -Force | Out-Null
+
+Write-Log "===== AUTO INGEST RUN STARTED ====="
+Write-Log "Incoming Root: $incomingRoot"
+Write-Log "Raw Archive: $rawDestinationFolder"
+Write-Log "Proxy Folder: $proxyDestinationFolder"
+Write-Log "Max Files: $maxFiles"
+
+# ===== FIND FILES =====
+$files = foreach ($ext in $videoExtensions) {
+    Get-ChildItem -Path $incomingRoot -Recurse -File -Filter $ext
+}
+
+$files = $files | Select-Object -First $maxFiles
+
+Write-Log "Found $($files.Count) incoming video files."
+
+foreach ($file in $files) {
+
+    try {
+
+        Write-Log ""
+        Write-Log "Checking file: $($file.FullName)"
+
+        Wait-UntilFileReady -Path $file.FullName
+
+        Write-Log "File appears stable / fully copied."
+
+        # ===== GET VIDEO RESOLUTION =====
+        $resolution = & $ffprobe `
+            -v error `
+            -select_streams v:0 `
+            -show_entries stream=width,height `
+            -of csv=s=x:p=0 `
+            "$($file.FullName)"
+
+        if ([string]::IsNullOrWhiteSpace($resolution) -or $resolution -notmatch "x") {
+            throw "Could not detect resolution."
+        }
+
+        $width = [int]($resolution.Split("x")[0])
+        $height = [int]($resolution.Split("x")[1])
+
+        Write-Log "Detected resolution: ${width}x${height}"
+
+        # ===== CHOOSE FILTER =====
+        if ($width -ge 3000) {
+
+            Write-Log "4K detected - using Hero 10 upside-down flip filter"
+
+            $videoFilter = "transpose_cuda=2,transpose_cuda=2,scale_cuda=1920:1080"
+        }
+        else {
+
+            Write-Log "1080p detected - using normal filter"
+
+            $videoFilter = "scale_cuda=1920:1080"
+        }
+
+			# ===== OUTPUT PATHS =====
+		$baseName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+		$extension = $file.Extension
+
+		$proxyFile = Join-Path $proxyDestinationFolder "${baseName}_proxy.MP4"
+		$rawDestinationFile = Join-Path $rawDestinationFolder $file.Name
+
+		# ===== EXISTENCE CHECKS =====
+		$proxyExists = Test-Path $proxyFile
+		$rawExists   = Test-Path $rawDestinationFile
+
+		# Skip ENTIRELY if BOTH already exist
+		if ($proxyExists -and $rawExists) {
+
+			$skippedCount++
+
+			Write-Log "SKIPPED: Proxy and raw archive already exist."
+			Write-Log "Proxy: $proxyFile"
+			Write-Log "Raw  : $rawDestinationFile"
+
+			continue
+		}
+
+		# ===== CREATE PROXY ONLY IF MISSING =====
+		if (!$proxyExists) {
+
+			Write-Log "Creating proxy:"
+			Write-Log "Input : $($file.FullName)"
+			Write-Log "Proxy : $proxyFile"
+			Write-Log "Filter: $videoFilter"
+
+			& $ffmpeg `
+				-hwaccel cuda `
+				-hwaccel_output_format cuda `
+				-i "$($file.FullName)" `
+				-vf "$videoFilter" `
+				-r 30 `
+				-c:v hevc_nvenc `
+				-preset p4 `
+				-cq 28 `
+				-c:a copy `
+				-metadata:s:v rotate=0 `
+				"$proxyFile"
+
+			if ($LASTEXITCODE -ne 0) {
+
+				$failedCount++
+
+				Write-Log "FAILED: FFmpeg returned exit code $LASTEXITCODE"
+
+				continue
+			}
+
+			Write-Log "Proxy created successfully."
+		}
+		else {
+
+			Write-Log "SKIPPED proxy creation: Proxy already exists."
+		}
+
+		# ===== COPY RAW ONLY IF MISSING =====
+		if (!$rawExists) {
+
+			Copy-Item -Path $file.FullName -Destination $rawDestinationFile
+
+			Write-Log "Raw copied to: $rawDestinationFile"
+		}
+		else {
+
+			Write-Log "SKIPPED raw copy: Raw archive already exists."
+		}
+		
+    }
+    catch {
+
+        $failedCount++
+
+        Write-Log "FAILED: $($file.FullName)"
+        Write-Log "Reason: $($_.Exception.Message)"
+    }
+}
+
+Write-Log ""
+Write-Log "===== AUTO INGEST RUN FINISHED ====="
+Write-Log "SUCCESS: $successCount"
+Write-Log "SKIPPED: $skippedCount"
+Write-Log "FAILED : $failedCount"
+Write-Log "Log File: $logFile"
